@@ -13,18 +13,20 @@ function injection (code) {
     .appendTo(document.body)[0]
     .contentWindow
 
-  var polyfetch = $('<script>').attr('src', '/promisees/fetch.js')
+  var fdoc = frame.document
+  var base = $('base').attr('href')
+  var polyfetch = $('<script>').attr('src', base + 'fetch.js')
   var script = $('<script>').attr('async', true).html(code)
 
   frame.Promise = promisees.Promise
 
-  $(frame.document.body).append(polyfetch)
+  $(fdoc.body).append(polyfetch)
 
   raf(quickcheck)
 
   function quickcheck () {
     if ('prototype' in frame.fetch) { // fetch polyfill landed
-      $(frame.document.body).append(script)
+      $(fdoc.body).append(script)
       return
     }
     raf(quickcheck)

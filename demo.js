@@ -58,7 +58,7 @@ function read (source) {
 
 function home (direction) {
   forced(original)
-  state(direction, '/promisees')
+  state(direction, '')
 }
 
 function push (direction) {
@@ -70,7 +70,7 @@ function push (direction) {
 }
 
 function state (direction, url) {
-  history[direction]({p:1}, null, url || `/promisees?code=${encodeURIComponent(latest).replace(/%20/g, '+')}`)
+  history[direction]({p:1}, null, url || `?code=${encodeURIComponent(latest).replace(/%20/g, '+')}`)
 }
 
 function back (e) {

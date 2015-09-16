@@ -7,7 +7,7 @@
     "scripts": "browserify -dvo dist/demo.js demo.js && uglifyjs -m -c -o dist/demo.min.js dist/demo.js",
     "start": "watchify -dvo dist/demo.min.js demo.js & stylus --include-css --include . -w demo.styl --import node_modules/nib -o dist & static-server . --port ${PORT:='3000'}",
     "styles": "stylus --include-css --include . demo.styl --import node_modules/nib -o dist && cleancss dist/demo.css -o dist/demo.css",
-    "deploy": "npm run build ; git add . ; git commit -am 'build commit' ; git push"
+    "deploy": "npm run build ; git add . ; git commit -am 'build commit' ; git checkout gh-pages ; git merge master ; git push ; git checkout master ; git push"
   },
   "main": "dist/promisees.js",
   "browserify": {

@@ -1,15 +1,16 @@
 <!doctype html>
 <title>Promisees</title>
+<base href='/'>
 <meta charset='utf-8'>
 <link href='dist/demo.css' rel='stylesheet' type='text/css' />
 <header>
-  <h1 class='lh-title'>Promi<span class='tx-small'>sees</span> <span class='lh-tagline'>&mdash; Promise visualization playground for the adventurous</span></h1>
+  <h1 class='lh-title-heading'><a class='lh-title' href=''>Promi<span class='tx-small'>sees</span> <span class='lh-tagline'>&mdash; Promise visualization playground for the adventurous</span></a></h1>
   <nav>
     <ul class='ng-list'>
-      <li><a class='ng-link ng-perma' href='/promisees'>Basic</a></li>
-      <li><a class='ng-link ng-perma' href='/promisees?code=function+later+()+%7B%0A++return+new+Promise((resolve%2C+reject)+%3D>+%7B%0A++++setTimeout(()+%3D>+resolve(%27yay%27)%2C+1500)%0A++%7D)%0A%7D%0A%0Afunction+muchLater+()+%7B%0A++return+later().then(later)%0A%7D%0A%0Avar+p+%3D+later()%0A++.then(muchLater)%0A%0Ap.then(x+%3D>+console.log(x))%0Ap%0A++.then(x+%3D>+x.y.z)%0A++.catch(err+%3D>+console.error(err))%0A++.then(muchLater)'>Complex</a></li>
+      <li><a class='ng-link ng-perma' href=''>Basic</a></li>
+      <li><a class='ng-link ng-perma' href='?code=function+later+()+%7B%0A++return+new+Promise((resolve%2C+reject)+%3D>+%7B%0A++++setTimeout(()+%3D>+resolve(%27yay%27)%2C+1500)%0A++%7D)%0A%7D%0A%0Afunction+muchLater+()+%7B%0A++return+later().then(later)%0A%7D%0A%0Avar+p+%3D+later()%0A++.then(muchLater)%0A%0Ap.then(x+%3D>+console.log(x))%0Ap%0A++.then(x+%3D>+x.y.z)%0A++.catch(err+%3D>+console.error(err))%0A++.then(muchLater)'>Complex</a></li>
 
-      <li><a class='ng-link ng-perma' href='/promisees?code=function+later+()+%7B%0A++return+new+Promise((resolve%2C+reject)+%3D%3E+%7B%0A++++setTimeout(()+%3D%3E+resolve(%27yay%27)%2C+1500)%0A++%7D)%0A%7D%0A%0Afunction+muchLater+()+%7B%0A++return+later().then(later)%0A%7D%0A%0Avar+p+%3D+later()%0A++.then(()+%3D%3E+Promise.all(%5Blater()%2C+muchLater()%5D))%0A%0Ap.then(x+%3D%3E+console.log(...x))%0Ap.then(x+%3D%3E+x.y.z)'><code>Promise.all</code></a></li>
+      <li><a class='ng-link ng-perma' href='?code=function+later+()+%7B%0A++return+new+Promise((resolve%2C+reject)+%3D%3E+%7B%0A++++setTimeout(()+%3D%3E+resolve(%27yay%27)%2C+1500)%0A++%7D)%0A%7D%0A%0Afunction+muchLater+()+%7B%0A++return+later().then(later)%0A%7D%0A%0Avar+p+%3D+later()%0A++.then(()+%3D%3E+Promise.all(%5Blater()%2C+muchLater()%5D))%0A%0Ap.then(x+%3D%3E+console.log(...x))%0Ap.then(x+%3D%3E+x.y.z)'><code>Promise.all</code></a></li>
 
       <li><button class='ng-link ng-save'>Permalink to your code block?</button></li>
       <li><a class='ng-link' href='https://github.com/bevacqua/promisees', target='_blank'>GitHub</a></li>
