@@ -13,7 +13,7 @@ function injection (code) {
     .appendTo(document.body)[0]
     .contentWindow
 
-  var polyfetch = $('<script>').attr('src', 'fetch.js')
+  var polyfetch = $('<script>').attr('src', '/promisees/fetch.js')
   var script = $('<script>').attr('async', true).html(code)
 
   frame.Promise = promisees.Promise
