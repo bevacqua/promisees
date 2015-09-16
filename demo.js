@@ -23,7 +23,13 @@ listen()
 function listen () {
   input.on('keypress change keydown', dreload)
   save.on('click', permalink)
-  perma.on('click', e => read(e.target))
+  perma.on('click', follow)
+}
+
+function follow (e) {
+  if (e.which === 1 && !e.metaKey && !e.ctrlKey) {
+    read(e.currentTarget)
+  }
 }
 
 function reload () {
