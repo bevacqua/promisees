@@ -6,24 +6,25 @@ import injection from './injection'
 import visualizer from './visualizer'
 import debounce from 'lodash/function/debounce'
 var container = $('.ly-container')
-var title = $('.lh-title')
 var input = $('.ly-input')
 var output = $('.ly-output')
-var save = $('.ng-save')
 var perma = $('.ng-perma')
+var save = $('.ng-save')
 var dreload = debounce(reload, 300)
 var original = `fetch('/foo')
   .then(res => res.status)
   .then(status => console.log(status))`
 var latest
+var base = location.pathname.slice(1)
 
 read(location)
+listen()
 
-global.onpopstate = back
-input.on('keypress change keydown', dreload)
-save.on('click', () => push('pushState'))
-title.on('click', () => home('pushState'))
-perma.on('click', capture)
+function listen () {
+  input.on('keypress change keydown', dreload)
+  save.on('click', permalink)
+  perma.on('click', e => read(e.target))
+}
 
 function reload () {
   var code = input.value().trim()
@@ -39,46 +40,19 @@ function forced (code) {
   reload(code)
 }
 
-function capture (e) {
-  if (e.which === 1 && !e.metaKey && !e.ctrlKey) {
-    read(e.target)
-    e.preventDefault()
-  }
-}
-
 function read (source) {
-  var qs = parse(source.search.slice(1))
+  var qs = parse(source.hash.slice(1))
   if (qs.code) {
     forced(qs.code)
-    push(source === location ? 'replaceState' : 'pushState')
   } else {
-    home('replaceState')
+    forced(original)
   }
 }
 
-function home (direction) {
-  forced(original)
-  state(direction, '')
-}
-
-function push (direction) {
+function permalink () {
   if (latest === original) {
-    home(direction)
+    location.hash = ''
   } else {
-    state(direction)
+    location.hash = `#code=${encodeURIComponent(latest).replace(/%20/g, '+')}`
   }
-}
-
-function state (direction, url) {
-  history[direction]({p:1}, null, url || `?code=${encodeURIComponent(latest).replace(/%20/g, '+')}`)
-}
-
-function back (e) {
-  var s = e.state;
-  var empty = !s || !s.p;
-  if (empty) {
-    return;
-  }
-  var code = parse(location.search.slice(1)).code || original
-  forced(code)
 }

@@ -14,8 +14,8 @@ function injection (code) {
     .contentWindow
 
   var fdoc = frame.document
-  var base = $('base').attr('href')
-  var polyfetch = $('<script>').attr('src', base + 'fetch.js')
+  var base = location.pathname
+  var polyfetch = $('<script>').attr('src', location.pathname + 'fetch.js')
   var script = $('<script>').attr('async', true).html(code)
 
   frame.Promise = promisees.Promise
