@@ -59,6 +59,6 @@ function permalink () {
   if (latest === original) {
     location.hash = ''
   } else {
-    location.hash = `#code=${encodeURIComponent(latest).replace(/%20/g, '+')}`
+    location.hash = '#code=' + encodeURIComponent(latest).replace(/%20/g, '+')
   }
 }

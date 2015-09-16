@@ -1,4 +1,4 @@
-.ly-container,
+.ly-main,
 .ly-input
   background-color #34495e
 
@@ -7,12 +7,12 @@
   display block
   resize none
   padding 10px
-  width 100%
   min-height 330px
 
 .ly-input
   border none
   color #ecf0f1
+  width 100%
 
 .ly-output
   display block
@@ -28,9 +28,12 @@
   visibility hidden
 
 @media only screen and (min-width: 768px)
-  .ly-container
+  .ly-main
     display table
     width 100%
+
+  .ly-container
+    display table-row
 
   .ly-input,
   .ly-output

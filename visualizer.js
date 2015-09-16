@@ -81,6 +81,7 @@ function visualizer (result) {
 
     intro
       .append('circle')
+      .attr('r', 45)
       .each(p => p._parents.forEach((parent) => {
         svg
           .insert('line', ':first-child')
@@ -151,15 +152,15 @@ function visualizer (result) {
   }
 
   function cx (p) {
-    var width = 50
+    var x = 70
     while (p._parents.length) {
-      width += 100
+      x += 100
       p = p._parents[0]
     }
-    if (svg.attr('width') < width + 50) {
-      svg.attr('width', width + 100)
+    if (svg.attr('width') < x + 50) {
+      svg.attr('width', x + 100)
     }
-    return width
+    return x
   }
 
   function cy (p) {
@@ -168,20 +169,20 @@ function visualizer (result) {
     var col_index = col.indexOf(p) + 1
     var row_length = Math.max(...metadata.row.map(col => col.length))
     var row_height = row_length * 100
-    var prev_height = 0
+    var accumulated = 0
     var level = matrix.indexOf(metadata.row)
     var n = level
     while (n > 0) {
       n--
-      prev_height += Math.max(...matrix[n].map(col => col.length)) * 100 + 50
+      accumulated += Math.max(...matrix[n].map(col => col.length)) * 100 + 50
     }
     var item_height = col_index * 100
     var offset = (row_length - col.length) * 50
-    var height = prev_height + item_height + offset - 50 * (level + 1)
-    if (svg.attr('height') < height + 50) {
-      svg.attr('height', height + 100)
+    var y = accumulated + item_height + offset - 50 * (level + 1)
+    if (svg.attr('height') < y + 50) {
+      svg.attr('height', y + 100)
     }
-    return height
+    return y + 20
   }
 }
 

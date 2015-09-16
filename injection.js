@@ -3,6 +3,7 @@
 import $ from 'dominus'
 import raf from 'raf'
 import promisees from './lib'
+import polyfetch from './polyfetch'
 
 function injection (code) {
   $('.ly-frame').remove()
@@ -13,24 +14,10 @@ function injection (code) {
     .appendTo(document.body)[0]
     .contentWindow
 
-  var fdoc = frame.document
-  var base = location.pathname
-  var polyfetch = $('<script>').attr('src', location.pathname + 'fetch.js')
-  var script = $('<script>').attr('async', true).html(code)
-
   frame.Promise = promisees.Promise
+  frame.eval(polyfetch)
 
-  $(fdoc.body).append(polyfetch)
-
-  raf(quickcheck)
-
-  function quickcheck () {
-    if ('prototype' in frame.fetch) { // fetch polyfill landed
-      $(fdoc.body).append(script)
-      return
-    }
-    raf(quickcheck)
-  }
+  raf(() => frame.eval(code))
 }
 
 export default injection

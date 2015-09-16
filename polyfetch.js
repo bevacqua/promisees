@@ -1,14 +1,17 @@
 // forked from github.com/github/fetch
-// only modification was to remove `if (self.fetch) return` guard
+// modifications:
+// - removed `if (self.fetch) return` guard
+// - turned backtick in regex into \u0060
+// - exported as a raw template literal that can be eval'd
 
-(function() {
+export default String.raw`(function() {
   'use strict';
 
   function normalizeName(name) {
     if (typeof name !== 'string') {
       name = String(name)
     }
-    if (/[^a-z0-9\-#$%&'*+.\^_`|~]/i.test(name)) {
+    if (/[^a-z0-9\-#$%&'*+.\^_\u0060|~]/i.test(name)) {
       throw new TypeError('Invalid character in header field name')
     }
     return name.toLowerCase()
@@ -345,5 +348,5 @@
     })
   }
   self.fetch.polyfill = true
-
 })();
+`
