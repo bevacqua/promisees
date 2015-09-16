@@ -1,0 +1,47 @@
+.ly-container,
+.ly-input
+  background-color #34495e
+
+.ly-input,
+.ly-svg
+  display block
+  resize none
+  padding 10px
+  width 100%
+  min-height 330px
+
+.ly-input
+  border none
+  color #ecf0f1
+
+.ly-output
+  display block
+  background-color #ecf0f1
+  color #27ae60
+
+.ly-frame
+  position fixed
+  top 0
+  left 0
+  width 1px
+  height 1px
+  visibility hidden
+
+@media only screen and (min-width: 768px)
+  .ly-container
+    display table
+    width 100%
+
+  .ly-input,
+  .ly-output
+    display table-cell
+    vertical-align top
+    overflow auto
+    min-height 660px
+    height 100%
+
+  .ly-output
+    width 50%
+
+  .ly-svg
+    min-height 660px

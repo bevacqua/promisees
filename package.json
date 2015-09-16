@@ -1,0 +1,57 @@
+{
+  "name": "promisees",
+  "version": "1.0.0",
+  "description": "Promise visualization playground for the adventurous",
+  "scripts": {
+    "build": "npm run scripts && npm run styles",
+    "scripts": "browserify -dvo dist/demo.js demo.js && uglifyjs -m -c -o dist/demo.min.js dist/demo.js",
+    "start": "watchify -dvo dist/demo.min.js demo.js & stylus --include-css --include . -w demo.styl --import node_modules/nib -o dist & static-server . --port ${PORT:='3000'}",
+    "styles": "stylus --include-css --include . demo.styl --import node_modules/nib -o dist && cleancss dist/demo.css -o dist/demo.css",
+    "deploy": "npm run build ; git add . ; git commit -am 'build commit' ; git push"
+  },
+  "main": "dist/promisees.js",
+  "browserify": {
+    "transform": [
+      [
+        "babelify",
+        {
+          "stage": [
+            0
+          ]
+        }
+      ]
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bevacqua/promisees.git"
+  },
+  "author": "Nicolas Bevacqua <nicolasbevacqua@gmail.com> (http://bevacqua.io/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bevacqua/promisees/issues"
+  },
+  "homepage": "https://github.com/bevacqua/promisees",
+  "dependencies": {
+    "callsites": "1.0.0",
+    "contra": "1.9.1",
+    "d3": "3.5.6",
+    "dominus": "5.0.6",
+    "es6-promise": "3.0.2",
+    "lodash": "3.10.1",
+    "omnibox": "1.0.0",
+    "raf": "3.1.0",
+    "whatwg-fetch": "0.9.0"
+  },
+  "devDependencies": {
+    "babelify": "6.3.0",
+    "browserify": "11.1.0",
+    "clean-css": "3.4.3",
+    "nib": "1.1.0",
+    "normalize.css": "3.0.3",
+    "static-server": "2.0.0",
+    "stylus": "0.52.4",
+    "uglify-js": "2.4.24",
+    "watchify": "3.4.0"
+  }
+}

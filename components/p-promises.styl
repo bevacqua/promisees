@@ -1,0 +1,73 @@
+.p-circle
+  r 45px
+
+.p-text
+  fill #ecf0f1
+  font-size 14px
+  text-anchor middle
+  alignment-baseline middle
+
+.p-pending
+  fill #95a5a6
+
+.p-rejected
+  fill #e23624
+  stroke #e74c3c
+  stroke-width 5px
+  animation uh-oh 1s ease infinite
+
+.p-fulfilled
+  fill lighten(#16a085, 10%)
+  stroke-width 2px
+  stroke lighten(#16a085, 15%)
+  animation cubic-bezier(0.4, 0, 1, 1) outward-completion 0.5s
+
+.p-connector
+  stroke #c8d7e4
+
+.p-blocker-arrow
+  stroke #f5da55
+  stroke-width 8px
+  stroke-dasharray 3px,5px,3px
+
+.p-blocker-fade
+  transition opacity 0.5s ease-out
+  opacity 0
+
+.p-blocked
+  fill #f5da55
+  stroke #f5da55
+  stroke-width 5px
+  animation uh-oh 1s ease infinite
+
+  + .p-text
+    fill #34495e
+
+@keyframes uh-oh
+  0%
+    stroke-width 1
+  10%
+    stroke-width 8px
+  15%
+    stroke-width 2px
+  100%
+    stroke-width 6px
+
+@keyframes outward-completion
+  0%
+    fill lighten(#16a085, 10%)
+    stroke lighten(#16a085, 10%)
+    stroke-width 2px
+    r 40px
+  40%
+    fill lighten(#16a085, 10%)
+    stroke lighten(#16a085, 10%)
+    r 30px
+    stroke-width 20px
+  70%
+    fill #16a085
+    stroke lighten(#16a085, 10%)
+    r 20px
+    stroke-width 20px
+  100%
+    opacity 1
