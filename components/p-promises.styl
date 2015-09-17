@@ -1,10 +1,12 @@
 .p-name
+  cursor default
   fill #ecf0f1
   font-size 14px
   text-anchor middle
   dominant-baseline middle
 
 .p-name-dual
+  cursor default
   text-anchor start
 
 .p-pending
@@ -30,9 +32,13 @@
   stroke-width 8px
   stroke-dasharray 3px,5px,3px
 
-.p-blocker-fade
-  transition opacity 0.5s ease-out
-  opacity 0
+.p-blocker-leftover
+  animation all 1s ease-in-out
+  transition all 0.5s ease-in-out
+  fill inherit
+  opacity 1
+  stroke #c8d7e4
+  stroke-width 1px
 
 .p-blocked
   fill #f5da55
@@ -42,6 +48,15 @@
 
   + .p-name
     fill #34495e
+
+@keyframes opacize
+  80%
+    fill inherit
+    stroke #c8d7e4
+    opacity 0.3
+  100%
+    opacity 1
+    stroke-width 1px
 
 @keyframes uh-oh
   0%

@@ -2,6 +2,7 @@
 
 import $ from 'dominus'
 import d3 from 'd3'
+import raf from 'raf'
 import promisees from './lib'
 var PENDING = void 0
 var FULFILLED = 1
@@ -47,13 +48,14 @@ function visualizer (result) {
 
   promisees.off()
   promisees.on('construct', add)
-  promisees.on('state', state)
   promisees.on('blocked', blocked)
+  promisees.on('state', state)
 
   function add (p) {
     meta.set(p, {
       blockers: 0,
       blocking: [],
+      blocklines: [],
       resolver: methodInfo(p._resolver),
       fulfillment: methodInfo(p._fulfillment),
       rejection: methodInfo(p._rejection)
@@ -61,6 +63,7 @@ function visualizer (result) {
     promises.push(p)
     rematrix()
     refresh()
+    raf(() => blockcheck(p))
   }
 
   function state (p) {
@@ -68,25 +71,48 @@ function visualizer (result) {
     refresh()
   }
 
+  function blockcheck (p) {
+    if (p._role !== '[all]' && p._role !== '[race]') {
+      return
+    }
+    if (p._state === PENDING) {
+      p._parents.forEach(parent => {
+        if (parent._state === PENDING) {
+          blocked(p, parent)
+        }
+      })
+    }
+  }
+
   function blocked (p, blocker) {
-    var block = meta.get(blocker)
+    var metadata = meta.get(blocker)
     meta.get(p).blockers++
-    block.blocking.push(p)
-    block.line = svg.insert('line', ':first-child')
+    metadata.blocking.push(p)
+    metadata.blocklines.push(svg
+      .insert('line', ':first-child')
       .attr('class', 'p-blocker-arrow')
       .attr('x1', cx(blocker))
       .attr('y1', cy(blocker))
       .attr('x2', cx(p))
       .attr('y2', cy(p))
+    )
     refresh()
   }
 
   function unblock (p) {
-    var block = meta.get(p)
-    if (block.blocking.length) {
-      block.blocking.map(p => meta.get(p)).forEach(m => m.blockers--)
-      block.blocking = []
-      block.line.attr('class', 'p-blocker-arrow p-blocker-fade')
+    var metadata = meta.get(p)
+    if (metadata.blocking.length) {
+      metadata.blocking.forEach(p => {
+        var m = meta.get(p)
+        if (p._role === '[race]' && !m.raceEnded) {
+          m.raceEnded = true
+          p._parents.filter(p => p._state === PENDING).forEach(unblock)
+        }
+        m.blockers--
+      })
+      metadata.blocking = []
+      metadata.blocklines.forEach(line => line.attr('class', 'p-blocker-arrow p-blocker-leftover'))
+      metadata.blocklines = []
     }
   }
 
@@ -102,7 +128,7 @@ function visualizer (result) {
     intro
       .append('circle')
       .attr('r', 45)
-      .each(p => p._parents.forEach(parent => svg
+      .each(p => p._role === '[all]' || p._role === '[race]' || p._parents.forEach(parent => svg
         .insert('line', ':first-child')
         .attr('class', `p-connector p-connector-${parent._id}-${p._id}`)
       ))
@@ -220,8 +246,8 @@ function visualizer (result) {
       text.push(buckets[FULFILLED] + ' fulfilled promise' + pluralize(buckets[FULFILLED]))
     }
     return text.join(', ')
-    function pluralize (c) {
-      return c === 1 ? '' : 's'
+    function pluralize (count) {
+      return count === 1 ? '' : 's'
     }
   }
   function tryParse (result) {
