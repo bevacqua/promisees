@@ -1,10 +1,10 @@
 .tt-container
   display none
   position absolute
+  box-shadow 1px 1px 2px #ccc
 
 .tt-wrapper
-  box-shadow 1px 1px 2px #ccc
-  background-color #34495e
+  background-color #95a5a6
   color #ecf0f1
 
 .tt-header
@@ -17,6 +17,19 @@
 
 .tt-show
   display block
+
+.tt-state
+  background-color #34495e
+  text-transform uppercase
+
+.tt-blocked
+  color #f5da55
+
+.tt-fulfilled
+  color lighten(#16a085, 10%)
+
+.tt-rejected
+  color #e23624
 
 .tt-fulfillment
   background-color darken(#16a085, 10%)

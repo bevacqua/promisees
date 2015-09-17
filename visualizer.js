@@ -6,10 +6,10 @@ import promisees from './lib'
 var PENDING = void 0
 var FULFILLED = 1
 var REJECTED = 2
-var classes = {
-  [PENDING]: 'p-pending',
-  [FULFILLED]: 'p-fulfilled',
-  [REJECTED]: 'p-rejected'
+var states = {
+  [PENDING]: 'pending',
+  [FULFILLED]: 'fulfilled',
+  [REJECTED]: 'rejected'
 }
 
 function visualizer (result) {
@@ -113,17 +113,19 @@ function visualizer (result) {
 
     svg
       .on('mousemove', p => {
-        var rectTip = tip[0][0].getBoundingClientRect()
-        var ex = d3.event.pageX + getScroll('scrollLeft', 'pageXOffset')
-        var ey = d3.event.pageY + getScroll('scrollTop', 'pageYOffset')
+        var r = tip[0][0].getBoundingClientRect()
+        var ex = d3.event.pageX
+        var ey = d3.event.pageY
+        var sx = getScroll('scrollLeft', 'pageXOffset')
+        var sy = getScroll('scrollTop', 'pageYOffset')
         var vw = Math.max(document.documentElement.clientWidth, global.innerWidth || 0)
         var vh = Math.max(document.documentElement.clientHeight, global.innerHeight || 0)
-        var x = Math.min(ex + rectTip.width + 20, vw - 20)
-        var y = Math.min(ey + rectTip.height + 20, vh - 20)
+        var xx = Math.min(ex + 20 + r.width, vw + sx - 20) - r.width
+        var yy = Math.min(ey + 20 + r.height, vh + sy - 20) - r.height
 
         tip
-          .style('left', x - rectTip.width + 'px')
-          .style('top', y - rectTip.height + 'px')
+          .style('left', xx + 'px')
+          .style('top', yy + 'px')
       })
 
     intro
@@ -133,7 +135,7 @@ function visualizer (result) {
       .selectAll('circle')
       .attr('cx', cx)
       .attr('cy', cy)
-      .attr('class', p => `p-circle ${meta.get(p).blockers ? 'p-blocked' : classes[p._state]}`)
+      .attr('class', p => `p-circle ${meta.get(p).blockers ? 'p-blocked' : 'p-' + states[p._state]}`)
       .each(p => p._parents.forEach((parent) => {
         svg
           .selectAll(`.p-connector-${parent._id}-${p._id}`)
@@ -184,7 +186,9 @@ function visualizer (result) {
   }
 
   function pullMethods (p) {
-    return getCode(p)
+    var metadata = meta.get(p)
+    var status = metadata.blockers ? 'blocked' : states[p._state]
+    return block(status, null, 'tt-state tt-' + status) + getCode(p)
   }
 
   function spellOut (p) {
@@ -205,7 +209,6 @@ function visualizer (result) {
     return buckets
   }
   function toStateText (buckets) {
-    console.log(buckets)
     var text = []
     if (buckets[PENDING]) {
       text.push(buckets[PENDING] + ' pending promise' + pluralize(buckets[PENDING]))
@@ -251,12 +254,13 @@ function visualizer (result) {
       return block('Rejection', m.rejection, 'tt-rejection')
     }
     return block(p._role, { name: spellOut(p) }, 'tt-' + p._role.replace(/^\[|\]$/g, ''))
-    function block (name, method, classes) {
-      return `<article class='tt-wrapper ${classes}'>
-        <header class='tt-header'>${name}</header>
-        <pre class='tt-code'><code>${method.full || method.name}</code></pre>
-      </article>`
-    }
+  }
+
+  function block (name, method, classes) {
+    return `<article class='tt-wrapper ${classes}'>
+      <header class='tt-header'>${name}</header>
+      ${method && `<pre class='tt-code'><code>${method.full || method.name}</code></pre>` || ''}
+    </article>`
   }
 
   function rematrix () {

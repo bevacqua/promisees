@@ -13,11 +13,12 @@ var save = $('.ng-save')
 var dreload = debounce(reload, 300)
 var original = `var p = fetch('/foo')
   .then(res => res.status, err => console.error(err))
-  .catch(err => console.error(err))
 
+p.catch(err => console.error(err))
 p.then(status => console.log(status))
-p.then(status => console.log(status))
-p.then(status => console.log(status))
+p
+  .then(status => status.a.b.c)
+  .catch(err => console.error(err))
 `
 var latest
 var base = location.pathname.slice(1)
