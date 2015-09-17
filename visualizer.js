@@ -31,6 +31,7 @@ function visualizer (result) {
     .select(selector)
     .append('svg')
     .attr('class', 'ly-svg')
+    .style('background-color', '#ecf0f1')
 
   var tip = d3
     .select(selector)
@@ -139,7 +140,7 @@ function visualizer (result) {
 
     svg
       .on('mousemove', p => {
-        var r = tip[0][0].getBoundingClientRect()
+        var r = tip.node().getBoundingClientRect()
         var ex = d3.event.pageX
         var ey = d3.event.pageY
         var sx = getScroll('scrollLeft', 'pageXOffset')
@@ -186,7 +187,7 @@ function visualizer (result) {
           return m.resolver.name || 'new()'
         }
         if (m.fulfillment && m.rejection) {
-          return `<tspan dx='${cx(p) - 30}' dy='${cy(p) - 10}'}'>${m.fulfillment.name || '.then()'}</tspan><tspan dx='-60' dy='25'>${m.rejection.name || '.catch()'}</tspan>`
+          return `<tspan dx='${cx(p) - 30}' dy='${cy(p) - 10}'>${m.fulfillment.name || '.then()'}</tspan><tspan dx='-60' dy='25'>${m.rejection.name || '.catch()'}</tspan>`
         }
         if (m.fulfillment) {
           return m.fulfillment.name || '.then()'
@@ -364,7 +365,7 @@ function visualizer (result) {
   function over (e) {
     var target = e.target
     while (target) {
-      if (svg[0][0] === target) {
+      if (svg.node() === target) {
         return true
       }
       target = target.parentElement

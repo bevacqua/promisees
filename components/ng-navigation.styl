@@ -8,6 +8,7 @@
 
 .ng-link
   display inline-block
+  cursor pointer
   padding 10px
   border-top 4px solid transparent
   border-bottom 4px solid transparent
@@ -16,3 +17,15 @@
     font-style italic
     border-top-color #16a085
     border-bottom-color #34495e
+
+.ng-recorder-off
+  color #e23624
+
+  &.ng-download
+    cursor wait
+
+.ng-download-ready
+  transition all 0.5s ease-in-out
+  cursor pointer
+  background-color #16a085
+  color #ecf0f1
