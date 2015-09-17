@@ -2,7 +2,7 @@
 
 import $ from 'dominus'
 import {parse} from 'omnibox/querystring'
-import vectorcam from './vectorcam'
+import vectorcam from 'vectorcam'
 import injection from './injection'
 import visualizer from './visualizer'
 import promisees from './lib'

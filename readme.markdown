@@ -4,5 +4,5 @@
 
 MIT
 
-[1]: http://i.imgur.com/YHtkWNG.gif
+[1]: http://i.imgur.com/Ou5Q0Nb.gif
 [2]: http://bevacqua.github.io/promisees
