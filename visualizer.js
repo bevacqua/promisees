@@ -31,13 +31,33 @@ function visualizer (result) {
     .append('svg')
     .attr('class', 'ly-svg')
 
+  var tip = d3
+    .select(selector)
+    .append('div')
+    .attr('class', 'tt-container')
+
+  $('body')
+    .off('mouseout')
+    .on('mousemove', e => {
+      if (over(e)) {
+        return
+      }
+      tip.attr('class', 'tt-container')
+    })
+
   promisees.off()
   promisees.on('construct', add)
   promisees.on('state', state)
   promisees.on('blocked', blocked)
 
   function add (p) {
-    meta.set(p, { blocking: [], blockers: 0 })
+    meta.set(p, {
+      blockers: 0,
+      blocking: [],
+      resolver: methodInfo(p._resolver),
+      fulfillment: methodInfo(p._fulfillment),
+      rejection: methodInfo(p._rejection)
+    })
     promises.push(p)
     rematrix()
     refresh()
@@ -49,7 +69,7 @@ function visualizer (result) {
   }
 
   function blocked (p, blocker) {
-    var block = meta.get(blocker);
+    var block = meta.get(blocker)
     meta.get(p).blockers++
     block.blocking.push(p)
     block.line = svg.insert('line', ':first-child')
@@ -82,16 +102,32 @@ function visualizer (result) {
     intro
       .append('circle')
       .attr('r', 45)
-      .each(p => p._parents.forEach((parent) => {
-        svg
-          .insert('line', ':first-child')
-          .attr('class', `p-connector p-connector-${parent._id}-${p._id}`)
-      }))
+      .each(p => p._parents.forEach(parent => svg
+        .insert('line', ':first-child')
+        .attr('class', `p-connector p-connector-${parent._id}-${p._id}`)
+      ))
+      .on('mouseover', p => tip
+        .html(pullMethods(p))
+        .attr('class', 'tt-container tt-show')
+      )
+
+    svg
+      .on('mousemove', p => {
+        var rectTip = tip[0][0].getBoundingClientRect()
+        var ex = d3.event.pageX + getScroll('scrollLeft', 'pageXOffset')
+        var ey = d3.event.pageY + getScroll('scrollTop', 'pageYOffset')
+        var vw = Math.max(document.documentElement.clientWidth, global.innerWidth || 0)
+        var vh = Math.max(document.documentElement.clientHeight, global.innerHeight || 0)
+        var x = Math.min(ex + rectTip.width + 20, vw - 20)
+        var y = Math.min(ey + rectTip.height + 20, vh - 20)
+
+        tip
+          .style('left', x - rectTip.width + 'px')
+          .style('top', y - rectTip.height + 'px')
+      })
 
     intro
       .append('text')
-      .attr('class', 'p-text')
-      .text(p => p._role)
 
     selection
       .selectAll('circle')
@@ -111,6 +147,116 @@ function visualizer (result) {
       .selectAll('text')
       .attr('dx', cx)
       .attr('dy', cy)
+      .attr('class', p => {
+        var m = meta.get(p)
+        var dual = m.fulfillment && m.rejection
+        return 'p-name' + (dual ? ' p-name-dual' : '')
+      })
+      .html(p => {
+        var m = meta.get(p)
+        if (m.resolver) {
+          return m.resolver.name || 'new()'
+        }
+        if (m.fulfillment && m.rejection) {
+          return `<tspan dx='${cx(p) - 30}' dy='${cy(p) - 10}'}'>${m.fulfillment.name || '.then()'}</tspan><tspan dx='-60' dy='25'>${m.rejection.name || '.catch()'}</tspan>`
+        }
+        if (m.fulfillment) {
+          return m.fulfillment.name || '.then()'
+        }
+        if (m.rejection) {
+          return m.rejection.name || '.catch()'
+        }
+        return p._role
+      })
+  }
+
+  function methodInfo (fn) {
+    if (!fn) { return null }
+    var name = fn.name ? fn.name + '()' : null
+    var full = fn.toString().trim()
+    if (full.length > 500) {
+      full = full.slice(0, 500) + ' [...]'
+    }
+    if (fn.polyfetch) {
+      full = null
+    }
+    return { full, name }
+  }
+
+  function pullMethods (p) {
+    return getCode(p)
+  }
+
+  function spellOut (p) {
+    if (p._role === '[reject]') {
+      return 'Rejected with: ' + tryParse(p._result)
+    }
+    if (p._state === FULFILLED) {
+      return 'Resolved with: ' + tryParse(p._result)
+    }
+    if (p._role === '[all]' || p._role === '[race]') {
+      return 'Waiting on: ' + toStateText(p._parents.reduce(toStateBuckets, {}))
+    }
+    return '???'
+  }
+  function toStateBuckets (buckets, p) {
+    buckets[p._state] = buckets[p._state] || 0
+    buckets[p._state]++
+    return buckets
+  }
+  function toStateText (buckets) {
+    console.log(buckets)
+    var text = []
+    if (buckets[PENDING]) {
+      text.push(buckets[PENDING] + ' pending promise' + pluralize(buckets[PENDING]))
+    }
+    if (buckets[REJECTED]) {
+      text.push(buckets[REJECTED] + ' rejected promise' + pluralize(buckets[REJECTED]))
+    }
+    if (buckets[FULFILLED]) {
+      text.push(buckets[FULFILLED] + ' fulfilled promise' + pluralize(buckets[FULFILLED]))
+    }
+    return text.join(', ')
+    function pluralize (c) {
+      return c === 1 ? '' : 's'
+    }
+  }
+  function tryParse (result) {
+    try {
+      if (typeof result === 'function') {
+        let info = methodInfo(result)
+        return info.full || info.name
+      }
+      return JSON.stringify(result, null, 2)
+    } catch (e) {
+      return `error {${e.message}}`
+    }
+  }
+
+  function getCode (p) {
+    var m = meta.get(p)
+    if (m.resolver) {
+      return block('Resolver', m.resolver, 'tt-resolver')
+    }
+    if (m.fulfillment && m.rejection) {
+      return (
+        block('Fulfillment', m.fulfillment, 'tt-fulfillment') +
+        block('Rejection', m.rejection, 'tt-rejection')
+      )
+    }
+    if (m.fulfillment) {
+      return block('Fulfillment', m.fulfillment, 'tt-fulfillment')
+    }
+    if (m.rejection) {
+      return block('Rejection', m.rejection, 'tt-rejection')
+    }
+    return block(p._role, { name: spellOut(p) }, 'tt-' + p._role.replace(/^\[|\]$/g, ''))
+    function block (name, method, classes) {
+      return `<article class='tt-wrapper ${classes}'>
+        <header class='tt-header'>${name}</header>
+        <pre class='tt-code'><code>${method.full || method.name}</code></pre>
+      </article>`
+    }
   }
 
   function rematrix () {
@@ -183,6 +329,28 @@ function visualizer (result) {
       svg.attr('height', y + 100)
     }
     return y + 20
+  }
+
+  function over (e) {
+    var target = e.target
+    while (target) {
+      if (svg[0][0] === target) {
+        return true
+      }
+      target = target.parentElement
+    }
+  }
+
+  function getScroll (scrollProp, offsetProp) {
+    if (typeof global[offsetProp] !== 'undefined') {
+      return global[offsetProp]
+    }
+    var documentElement = document.documentElement
+    if (documentElement.clientHeight) {
+      return documentElement[scrollProp]
+    }
+    var body = document.body
+    return body[scrollProp]
   }
 }
 

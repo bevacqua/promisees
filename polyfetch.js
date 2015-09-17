@@ -3,6 +3,8 @@
 // - removed `if (self.fetch) return` guard
 // - turned backtick in regex into \u0060
 // - exported as a raw template literal that can be eval'd
+// - named promise resolver 'fetch'
+// - extracted promise resolver and added 'polyfetch' property to identify it
 
 export default String.raw`(function() {
   'use strict';
@@ -286,7 +288,7 @@ export default String.raw`(function() {
   self.Request = Request;
   self.Response = Response;
 
-  self.fetch = function(input, init) {
+  self.fetch = function (input, init) {
     var request
     if (Request.prototype.isPrototypeOf(input) && !init) {
       request = input
@@ -294,7 +296,7 @@ export default String.raw`(function() {
       request = new Request(input, init)
     }
 
-    return new Promise(function(resolve, reject) {
+    function fetch (resolve, reject) {
       var xhr = new XMLHttpRequest()
 
       function responseURL() {
@@ -345,7 +347,9 @@ export default String.raw`(function() {
       })
 
       xhr.send(typeof request._bodyInit === 'undefined' ? null : request._bodyInit)
-    })
+    }
+    fetch.polyfetch = true
+    return new Promise(fetch)
   }
   self.fetch.polyfill = true
 })();

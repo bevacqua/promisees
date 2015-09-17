@@ -11,9 +11,14 @@ var output = $('.ly-output')
 var perma = $('.ng-perma')
 var save = $('.ng-save')
 var dreload = debounce(reload, 300)
-var original = `fetch('/foo')
-  .then(res => res.status)
-  .then(status => console.log(status))`
+var original = `var p = fetch('/foo')
+  .then(res => res.status, err => console.error(err))
+  .catch(err => console.error(err))
+
+p.then(status => console.log(status))
+p.then(status => console.log(status))
+p.then(status => console.log(status))
+`
 var latest
 var base = location.pathname.slice(1)
 
