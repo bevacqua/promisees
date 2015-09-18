@@ -87,7 +87,7 @@ function visualizer (result, options = {}) {
       rejection: methodInfo(p._rejection)
     }
     promises.push(p)
-    persist(true)
+    persist()
     raf(() => blockcheck(p))
   }
 
@@ -110,6 +110,7 @@ function visualizer (result, options = {}) {
   }
 
   function blocked (p, blocker) {
+    console.log(blocker._id, 'blocking', p._id)
     p.meta.blockers++
     blocker.meta.blocking.push([p, true])
     persist()
@@ -128,22 +129,16 @@ function visualizer (result, options = {}) {
     })
   }
 
-  function persist (rematrixed) {
-    var snapshot = promises.map(p => assign({}, p))
+  function persist () {
     var last = history[history.length - 1]
-    if (last && sum(snapshot) === sum(last)) {
-      return
-    }
+    var snapshot = promises.map(p => assign({}, p))
     snapshot.ids = snapshot.reduce((acc, p) => (acc[p._id] = p, acc), {})
     snapshot.date = new Date()
     snapshot.offset = last ? snapshot.date - last.date + 1 : 0
-    if (rematrixed) {
-      rematrix(snapshot)
-    } else {
-      snapshot.matrix = last.matrix
-    }
+    rematrix(snapshot)
     history.push(snapshot)
     renderer.unshift({ snapshot })
+    console.log(snapshot)
   }
 
   function pace ({ snapshot }, done) {
@@ -160,8 +155,6 @@ function visualizer (result, options = {}) {
   }
 
   function draw (snapshot) {
-    console.log(snapshot)
-
     historyFrame = snapshot
 
     var hash = sum(snapshot)
@@ -263,7 +256,10 @@ function visualizer (result, options = {}) {
     }
 
     function renderBlockers () {
-      var vectors = [].concat(...snapshot.map(p => p.meta.blocking.map(vector => [p, ...vector])))
+      var vectors = [].concat(...snapshot.map(p => p.meta.blocking
+        .filter(([blocker]) => blocker._id in snapshot.ids)
+        .map(vector => [p, ...vector])
+      ))
       var blockers = svg
         .selectAll('.p-blocker-arrow')
         .data(vectors, ([blocker, p]) => `${blocker._id}-${p._id}`)
