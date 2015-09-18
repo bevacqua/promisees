@@ -45,7 +45,7 @@ function visualizer (result, options = {}) {
 
   promisees.off()
   promisees.on('construct', add)
-  promisees.on('blocked', blocked)
+  promisees.on('blocked', () => { blocked(); persist() })
   promisees.on('state', state)
 
   var visualization = emitter({
@@ -101,18 +101,22 @@ function visualizer (result, options = {}) {
       return
     }
     if (p._state === PENDING) {
+      let blocks = 0
       p._parents.forEach(parent => {
         if (parent._state === PENDING) {
           blocked(p, parent)
+          blocks++
         }
       })
+      if (blocks) {
+        persist()
+      }
     }
   }
 
   function blocked (p, blocker) {
     p.meta.blockers++
     blocker.meta.blocking.push([p, true])
-    persist()
   }
 
   function unblock (p) {
