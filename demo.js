@@ -13,6 +13,10 @@ var output = $('.ly-output')
 var perma = $('.ng-perma')
 var save = $('.ng-save')
 var replay = $('.ng-replay')
+var first = $('.ng-first')
+var prev = $('.ng-prev')
+var next = $('.ng-next')
+var last = $('.ng-last')
 var recorder = $('.ng-recorder')
 var download = $('.ng-download')
 var downloadIcon = $('i', '.ng-download')
@@ -28,6 +32,7 @@ p
 `
 var state = {}
 var base = location.pathname.slice(1)
+var visualization
 var cam
 
 read(location)
@@ -37,6 +42,10 @@ function listen () {
   input.on('keypress change keydown', dreload)
   save.on('click', permalink)
   perma.on('click', follow)
+  first.on('click', () => to('first'))
+  prev.on('click', () => to('prev'))
+  next.on('click', () => to('next'))
+  last.on('click', () => to('last'))
   replay.on('click', () => forced(state.code))
   recorder.on('click', toggleRecorder)
 }
@@ -53,10 +62,17 @@ function reload () {
     return false
   }
   reset(code)
-  visualizer(injection(code))
+  state.visualization = visualizer(injection(code))
   if (recording()) {
     record()
   }
+}
+
+function to (position) {
+  if (state.visualization) {
+    state.visualization[position]()
+  }
+  // toggle classes
 }
 
 function recording () {
@@ -76,6 +92,7 @@ function toggleRecorder () {
 }
 
 function reset (code) {
+  console.clear()
   resetCam()
   state = { code }
   download.removeClass('ng-download-ready')

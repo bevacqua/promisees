@@ -3,6 +3,8 @@
 import $ from 'dominus'
 import d3 from 'd3'
 import raf from 'raf'
+import sum from 'hash-sum'
+import assign from 'assignment'
 import promisees from './lib'
 var PENDING = void 0
 var FULFILLED = 1
@@ -18,9 +20,9 @@ function visualizer (result) {
     return
   }
 
-  var meta = new WeakMap()
-  var matrix
-  var roots = []
+  var frameByFrame
+  var historyFrame
+  var history = []
   var promises = []
   var selector = '.ly-output'
   var parent = $.findOne(selector)
@@ -39,7 +41,7 @@ function visualizer (result) {
     .attr('class', 'tt-container')
 
   $('body')
-    .off('mouseout')
+    .off('mousemove')
     .on('mousemove', e => {
       if (over(e)) {
         return
@@ -52,24 +54,46 @@ function visualizer (result) {
   promisees.on('blocked', blocked)
   promisees.on('state', state)
 
+  return {
+    first () {
+      frameByFrame = true
+      draw(history[0])
+    },
+    prev () {
+      frameByFrame = true
+      draw(history[currentFrame() - 1])
+    },
+    next () {
+      frameByFrame = true
+      draw(history[currentFrame() + 1])
+    },
+    last () {
+      frameByFrame = true
+      draw(history[history.length - 1])
+    }
+  }
+
+  function currentFrame () {
+    return history.indexOf(historyFrame)
+  }
+
   function add (p) {
-    meta.set(p, {
+    p.meta = {
       blockers: 0,
       blocking: [],
       blocklines: [],
       resolver: methodInfo(p._resolver),
       fulfillment: methodInfo(p._fulfillment),
       rejection: methodInfo(p._rejection)
-    })
+    }
     promises.push(p)
-    rematrix()
-    refresh()
+    persist(true)
     raf(() => blockcheck(p))
   }
 
   function state (p) {
     unblock(p)
-    refresh()
+    persist()
   }
 
   function blockcheck (p) {
@@ -86,10 +110,9 @@ function visualizer (result) {
   }
 
   function blocked (p, blocker) {
-    var metadata = meta.get(blocker)
-    meta.get(p).blockers++
-    metadata.blocking.push(p)
-    metadata.blocklines.push(svg
+    p.meta.blockers++
+    blocker.meta.blocking.push(p)
+    blocker.meta.blocklines.push(svg
       .insert('line', ':first-child')
       .attr('class', 'p-blocker-arrow')
       .attr('x1', cx(blocker))
@@ -97,14 +120,14 @@ function visualizer (result) {
       .attr('x2', cx(p))
       .attr('y2', cy(p))
     )
-    refresh()
+    persist()
   }
 
   function unblock (p) {
-    var metadata = meta.get(p)
+    var metadata = p.meta
     if (metadata.blocking.length) {
       metadata.blocking.forEach(p => {
-        var m = meta.get(p)
+        var m = p.meta
         if (p._role === '[race]' && !m.raceEnded) {
           m.raceEnded = true
           p._parents.filter(p => p._state === PENDING).forEach(unblock)
@@ -117,10 +140,30 @@ function visualizer (result) {
     }
   }
 
-  function refresh () {
+  function persist (rematrixed) {
+    var snapshot = promises.map(p => assign({}, p))
+    var last = history[history.length - 1]
+    if (last && sum(snapshot) === sum(last)) {
+      return
+    }
+    if (rematrixed) {
+      rematrix(snapshot)
+    } else {
+      snapshot.matrix = last.matrix
+    }
+    snapshot.offset = last ? new Date() - last.offset : 0
+    history.push(snapshot)
+    if (frameByFrame !== true) {
+      draw(snapshot)
+    }
+  }
+
+  function draw (snapshot) {
+    historyFrame = snapshot
+    var hash = sum(snapshot)
     var selection = svg
       .selectAll('g')
-      .data(promises)
+      .data(snapshot, p => hash + Math.random())
 
     var intro = selection
       .enter()
@@ -162,27 +205,26 @@ function visualizer (result) {
       .selectAll('circle')
       .attr('cx', cx)
       .attr('cy', cy)
-      .attr('class', p => `p-circle ${meta.get(p).blockers ? 'p-blocked' : 'p-' + states[p._state]}`)
-      .each(p => p._parents.forEach((parent) => {
-        svg
-          .selectAll(`.p-connector-${parent._id}-${p._id}`)
-          .attr('x1', cx(parent))
-          .attr('y1', cy(parent))
-          .attr('x2', cx(p))
-          .attr('y2', cy(p))
-      }))
+      .attr('class', p => `p-circle ${p.meta.blockers ? 'p-blocked' : 'p-' + states[p._state]}`)
+      .each(p => p._parents.forEach((parent) => svg
+        .selectAll(`.p-connector-${parent._id}-${p._id}`)
+        .attr('x1', cx(parent))
+        .attr('y1', cy(parent))
+        .attr('x2', cx(p))
+        .attr('y2', cy(p))
+      ))
 
     selection
       .selectAll('text')
       .attr('dx', cx)
       .attr('dy', cy)
       .attr('class', p => {
-        var m = meta.get(p)
+        var m = p.meta
         var dual = m.fulfillment && m.rejection
         return 'p-name' + (dual ? ' p-name-dual' : '')
       })
       .html(p => {
-        var m = meta.get(p)
+        var m = p.meta
         if (m.resolver) {
           return m.resolver.name || 'new()'
         }
@@ -197,6 +239,10 @@ function visualizer (result) {
         }
         return p._role
       })
+
+    selection
+      .exit()
+      .remove()
   }
 
   function methodInfo (fn) {
@@ -213,8 +259,7 @@ function visualizer (result) {
   }
 
   function pullMethods (p) {
-    var metadata = meta.get(p)
-    var status = metadata.blockers ? 'blocked' : states[p._state]
+    var status = p.meta.blockers ? 'blocked' : states[p._state]
     return block(status, null, 'tt-state tt-' + status) + getCode(p)
   }
 
@@ -264,7 +309,7 @@ function visualizer (result) {
   }
 
   function getCode (p) {
-    var m = meta.get(p)
+    var m = p.meta
     if (m.resolver) {
       return block('Resolver', m.resolver, 'tt-resolver')
     }
@@ -290,14 +335,14 @@ function visualizer (result) {
     </article>`
   }
 
-  function rematrix () {
-    matrix = []
-    promises.forEach(p => {
+  function rematrix (snapshot) {
+    snapshot.matrix = snapshot.reduce(reducer, [])
+    function reducer (matrix, p) {
       if (p._parents.length) {
         let parent = p._parents[0]
         let depth = parentCount(p)
         let row = matrix
-          .filter(row => row.some(col => col.indexOf(parent) !== -1))
+          .filter(row => row.some(col => col.map(p => p._id).indexOf(parent._id) !== -1))
           .shift()
         if (row[depth]) {
           row[depth].push(p)
@@ -310,11 +355,11 @@ function visualizer (result) {
         let depth = matrix.push(row)
         assigned(p, row, 0)
       }
-    })
+      return matrix
+    }
     function assigned (p, row, depth) {
-      var metadata = meta.get(p)
-      metadata.row = row
-      metadata.col = row[depth]
+      p.meta.row = row
+      p.meta.col = row[depth]
     }
   }
 
@@ -341,17 +386,16 @@ function visualizer (result) {
   }
 
   function cy (p) {
-    var metadata = meta.get(p)
-    var col = metadata.col
-    var col_index = col.indexOf(p) + 1
-    var row_length = Math.max(...metadata.row.map(col => col.length))
+    var col = p.meta.col
+    var col_index = col.map(p => p._id).indexOf(p._id) + 1
+    var row_length = Math.max(...p.meta.row.map(col => col.length))
     var row_height = row_length * 100
     var accumulated = 0
-    var level = matrix.indexOf(metadata.row)
+    var level = historyFrame.matrix.indexOf(p.meta.row)
     var n = level
     while (n > 0) {
       n--
-      accumulated += Math.max(...matrix[n].map(col => col.length)) * 100 + 50
+      accumulated += Math.max(...historyFrame.matrix[n].map(col => col.length)) * 100 + 50
     }
     var item_height = col_index * 100
     var offset = (row_length - col.length) * 50

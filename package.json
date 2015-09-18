@@ -34,13 +34,10 @@
   "homepage": "https://github.com/bevacqua/promisees",
   "dependencies": {
     "assignment": "2.2.0",
-    "callsites": "1.0.0",
-    "computed-style": "0.3.0",
     "contra": "1.9.1",
     "d3": "3.5.6",
     "dominus": "5.0.6",
     "es6-promise": "3.0.2",
-    "gifshot": "0.3.2",
     "lodash": "3.10.1",
     "omnibox": "1.0.0",
     "raf": "3.1.0",
