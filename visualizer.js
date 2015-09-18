@@ -45,7 +45,9 @@ function visualizer (result, options = {}) {
 
   promisees.off()
   promisees.on('construct', add)
-  promisees.on('blocked', () => { blocked(); persist() })
+  promisees.on('blocked', (p, parent) => {
+    blocked(p, parent); persist()
+  })
   promisees.on('state', state)
 
   var visualization = emitter({

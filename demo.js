@@ -84,6 +84,7 @@ function to (e, position) {
   if (state.visualization) {
     state.visualization[position]()
     resetPlayback()
+    resetCam()
   }
 }
 
