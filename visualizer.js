@@ -40,15 +40,6 @@ function visualizer (result) {
     .append('div')
     .attr('class', 'tt-container')
 
-  $('body')
-    .off('mousemove')
-    .on('mousemove', e => {
-      if (over(e)) {
-        return
-      }
-      tip.attr('class', 'tt-container')
-    })
-
   promisees.off()
   promisees.on('construct', add)
   promisees.on('blocked', blocked)
@@ -81,7 +72,6 @@ function visualizer (result) {
     p.meta = {
       blockers: 0,
       blocking: [],
-      blocklines: [],
       resolver: methodInfo(p._resolver),
       fulfillment: methodInfo(p._fulfillment),
       rejection: methodInfo(p._rejection)
@@ -111,33 +101,20 @@ function visualizer (result) {
 
   function blocked (p, blocker) {
     p.meta.blockers++
-    blocker.meta.blocking.push(p)
-    blocker.meta.blocklines.push(svg
-      .insert('line', ':first-child')
-      .attr('class', 'p-blocker-arrow')
-      .attr('x1', cx(blocker))
-      .attr('y1', cy(blocker))
-      .attr('x2', cx(p))
-      .attr('y2', cy(p))
-    )
+    blocker.meta.blocking.push([p, blocker, true])
     persist()
   }
 
   function unblock (p) {
-    var metadata = p.meta
-    if (metadata.blocking.length) {
-      metadata.blocking.forEach(p => {
-        var m = p.meta
-        if (p._role === '[race]' && !m.raceEnded) {
-          m.raceEnded = true
-          p._parents.filter(p => p._state === PENDING).forEach(unblock)
-        }
-        m.blockers--
-      })
-      metadata.blocking = []
-      metadata.blocklines.forEach(line => line.attr('class', 'p-blocker-arrow p-blocker-leftover'))
-      metadata.blocklines = []
-    }
+    p.meta.blocking = p.meta.blocking.filter(([p, blocker, on]) => on).map(([p, blocker]) => {
+      var m = p.meta
+      if (p._role === '[race]' && !m.raceEnded) {
+        m.raceEnded = true
+        p._parents.filter(p => p._state === PENDING).forEach(unblock)
+      }
+      m.blockers--
+      return [p, blocker, false]
+    })
   }
 
   function persist (rematrixed) {
@@ -146,12 +123,13 @@ function visualizer (result) {
     if (last && sum(snapshot) === sum(last)) {
       return
     }
+    snapshot.ids = snapshot.reduce((acc, p) => { acc[p._id] = p; return acc }, {})
+    snapshot.offset = last ? new Date() - last.offset : 0
     if (rematrixed) {
       rematrix(snapshot)
     } else {
       snapshot.matrix = last.matrix
     }
-    snapshot.offset = last ? new Date() - last.offset : 0
     history.push(snapshot)
     if (frameByFrame !== true) {
       draw(snapshot)
@@ -159,30 +137,134 @@ function visualizer (result) {
   }
 
   function draw (snapshot) {
-    historyFrame = snapshot
     var hash = sum(snapshot)
-    var selection = svg
+    var dots = svg
       .selectAll('g')
-      .data(snapshot, p => hash + Math.random())
+      .data(snapshot, identity)
 
-    var intro = selection
+    var dotEnter = dots
       .enter()
       .append('g')
 
-    intro
+    var circleEnter = dotEnter
       .append('circle')
       .attr('r', 45)
-      .each(p => p._role === '[all]' || p._role === '[race]' || p._parents.forEach(parent => svg
+
+    historyFrame = snapshot
+
+    renderDots()
+    renderDotText()
+    renderConnectors()
+    renderBlockers()
+    addTips()
+
+    function renderDots () {
+      dots
+        .selectAll('circle')
+        .attr('cx', cx)
+        .attr('cy', cy)
+        .attr('class', p => `p-circle ${p.meta.blockers ? 'p-blocked' : 'p-' + states[p._state]}`)
+
+      dots
+        .exit()
+        .remove()
+    }
+
+    function renderDotText () {
+      dotEnter
+        .append('text')
+
+      dots
+        .selectAll('text')
+        .attr('dx', cx)
+        .attr('dy', cy)
+        .attr('class', p => {
+          var m = p.meta
+          var dual = m.fulfillment && m.rejection
+          return 'p-name' + (dual ? ' p-name-dual' : '')
+        })
+        .html(p => {
+          var m = p.meta
+          if (m.resolver) {
+            return m.resolver.name || 'new()'
+          }
+          if (m.fulfillment && m.rejection) {
+            return `<tspan dx='${cx(p) - 30}' dy='${cy(p) - 10}'>${m.fulfillment.name || '.then()'}</tspan><tspan dx='-60' dy='25'>${m.rejection.name || '.catch()'}</tspan>`
+          }
+          if (m.fulfillment) {
+            return m.fulfillment.name || '.then()'
+          }
+          if (m.rejection) {
+            return m.rejection.name || '.catch()'
+          }
+          return p._role
+        })
+    }
+
+    function renderConnectors () {
+      var connections = [].concat(...snapshot
+        .filter(p => p._role !== '[all]' && p._role !== '[race]')
+        .map(p => p._parents.map(parent => [p, parent]))
+      )
+      var connectors = svg
+        .selectAll('.p-connector')
+        .data(connections)
+
+      connectors
+        .enter()
         .insert('line', ':first-child')
-        .attr('class', `p-connector p-connector-${parent._id}-${p._id}`)
-      ))
-      .on('mouseover', p => tip
+        .attr('class', ([p, parent]) => `p-connector p-connector-${parent._id}-${p._id}`)
+
+      connectors
+        .attr('x1', ([p, parent]) => cx(parent))
+        .attr('y1', ([p, parent]) => cy(parent))
+        .attr('x2', ([p, parent]) => cx(p))
+        .attr('y2', ([p, parent]) => cy(p))
+
+      connectors
+        .exit()
+        .remove()
+    }
+
+    function identity (p) {
+      var prev = snapshot.ids[p._id]
+      if (!prev) {
+        return hash + Math.random()
+      }
+      if (prev._state === p._state) {
+        return p._id
+      }
+      return hash + Math.random()
+    }
+
+    function renderBlockers () {
+      var vectors = [].concat(...snapshot.map(p => p.meta.blocking))
+      var blockers = svg
+        .selectAll('.p-blocker-arrow')
+        .data(vectors, ([p, blocker]) => `${p._id}-${blocker._id}`)
+
+      blockers
+        .enter()
+        .insert('line', ':first-child')
+        .attr('x1', ([p, blocker]) => cx(blocker))
+        .attr('y1', ([p, blocker]) => cy(blocker))
+        .attr('x2', ([p]) => cx(p))
+        .attr('y2', ([p]) => cy(p))
+
+      blockers
+        .attr('class', ([p, blocker, on]) => `p-blocker-arrow ${on ? '' : 'p-blocker-leftover'}`)
+
+      blockers
+        .exit()
+        .remove()
+    }
+
+    function addTips () {
+      circleEnter.on('mouseover', p => tip
         .html(pullMethods(p))
         .attr('class', 'tt-container tt-show')
       )
-
-    svg
-      .on('mousemove', p => {
+      svg.on('mousemove', p => {
         var r = tip.node().getBoundingClientRect()
         var ex = d3.event.pageX
         var ey = d3.event.pageY
@@ -198,51 +280,15 @@ function visualizer (result) {
           .style('top', yy + 'px')
       })
 
-    intro
-      .append('text')
-
-    selection
-      .selectAll('circle')
-      .attr('cx', cx)
-      .attr('cy', cy)
-      .attr('class', p => `p-circle ${p.meta.blockers ? 'p-blocked' : 'p-' + states[p._state]}`)
-      .each(p => p._parents.forEach((parent) => svg
-        .selectAll(`.p-connector-${parent._id}-${p._id}`)
-        .attr('x1', cx(parent))
-        .attr('y1', cy(parent))
-        .attr('x2', cx(p))
-        .attr('y2', cy(p))
-      ))
-
-    selection
-      .selectAll('text')
-      .attr('dx', cx)
-      .attr('dy', cy)
-      .attr('class', p => {
-        var m = p.meta
-        var dual = m.fulfillment && m.rejection
-        return 'p-name' + (dual ? ' p-name-dual' : '')
-      })
-      .html(p => {
-        var m = p.meta
-        if (m.resolver) {
-          return m.resolver.name || 'new()'
-        }
-        if (m.fulfillment && m.rejection) {
-          return `<tspan dx='${cx(p) - 30}' dy='${cy(p) - 10}'>${m.fulfillment.name || '.then()'}</tspan><tspan dx='-60' dy='25'>${m.rejection.name || '.catch()'}</tspan>`
-        }
-        if (m.fulfillment) {
-          return m.fulfillment.name || '.then()'
-        }
-        if (m.rejection) {
-          return m.rejection.name || '.catch()'
-        }
-        return p._role
-      })
-
-    selection
-      .exit()
-      .remove()
+      $('body')
+        .off('mousemove')
+        .on('mousemove', e => {
+          if (over(e)) {
+            return
+          }
+          tip.attr('class', 'tt-container')
+        })
+    }
   }
 
   function methodInfo (fn) {
