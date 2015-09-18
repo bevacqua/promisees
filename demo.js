@@ -43,6 +43,7 @@ var editorSession = editor.getSession()
 
 editor.setTheme('ace/theme/tomorrow')
 editor.setShowPrintMargin(false)
+editor.commands.removeCommands(['gotoline', 'find']) // yuck, leave my keyboard alone
 editorSession.setMode('ace/mode/javascript')
 editorSession.setUseSoftTabs(true)
 editorSession.setTabSize(2)
