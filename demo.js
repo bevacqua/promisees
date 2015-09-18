@@ -2,6 +2,9 @@
 
 import $ from 'dominus'
 import {parse} from 'omnibox/querystring'
+import ace from 'brace'
+import 'brace/mode/javascript'
+import 'brace/theme/tomorrow'
 import vectorcam from 'vectorcam'
 import injection from './injection'
 import visualizer from './visualizer'
@@ -35,12 +38,21 @@ var state = {}
 var base = location.pathname.slice(1)
 var visualization
 var cam
+var editor = ace.edit(input[0])
+var editorSession = editor.getSession()
+
+editor.setTheme('ace/theme/tomorrow')
+editor.setShowPrintMargin(false)
+editorSession.setMode('ace/mode/javascript')
+editorSession.setUseSoftTabs(true)
+editorSession.setTabSize(2)
+editorSession.setUseWorker(false)
 
 read(location)
 listen()
 
 function listen () {
-  input.on('keypress change keydown', dreload)
+  editorSession.on('change', dreload)
   save.on('click', permalink)
   perma.on('click', follow)
   first.on('click', (e) => to(e, 'first'))
@@ -59,7 +71,7 @@ function follow (e) {
 }
 
 function reload () {
-  var code = input.value().trim()
+  var code = editor.getValue().trim()
   if (code === state.code) {
     return false
   }
@@ -195,7 +207,7 @@ function record () {
 
 function forced (code) {
   state.code = null
-  input.value(code)
+  editor.setValue(code, 1)
   reload()
 }
 
