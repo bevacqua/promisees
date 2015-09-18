@@ -1,5 +1,6 @@
 .ng-list
   list-style-type none
+  user-select none
   font-size 0
 
   li
@@ -24,11 +25,17 @@
 .ng-download
   cursor wait
 
-  &.ng-recorder-off
-    cursor not-allowed
-
 .ng-download-ready
   transition all 0.5s ease-in-out
   cursor pointer
   background-color #16a085
   color #ecf0f1
+
+.ng-recorder-off.ng-download,
+.ng-playback-disabled
+  color rgba(#000, 0.3)
+  cursor not-allowed
+
+  &:hover
+    border-top-color transparent
+    border-bottom-color transparent

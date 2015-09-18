@@ -581,6 +581,10 @@ a {
 }
 .ng-list {
   list-style-type: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
   font-size: 0;
 }
 .ng-list li {
@@ -605,9 +609,6 @@ a {
 .ng-download {
   cursor: wait;
 }
-.ng-download.ng-recorder-off {
-  cursor: not-allowed;
-}
 .ng-download-ready {
   -webkit-transition: all 0.5s ease-in-out;
   -moz-transition: all 0.5s ease-in-out;
@@ -617,6 +618,16 @@ a {
   cursor: pointer;
   background-color: #16a085;
   color: #ecf0f1;
+}
+.ng-recorder-off.ng-download,
+.ng-playback-disabled {
+  color: rgba(0,0,0,0.3);
+  cursor: not-allowed;
+}
+.ng-recorder-off.ng-download:hover,
+.ng-playback-disabled:hover {
+  border-top-color: transparent;
+  border-bottom-color: transparent;
 }
 .tx-small {
   font-variant: small-caps;

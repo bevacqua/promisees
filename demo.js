@@ -17,6 +17,7 @@ var first = $('.ng-first')
 var prev = $('.ng-prev')
 var next = $('.ng-next')
 var last = $('.ng-last')
+var x = $('.ng-x')
 var recorder = $('.ng-recorder')
 var download = $('.ng-download')
 var downloadIcon = $('i', '.ng-download')
@@ -42,11 +43,12 @@ function listen () {
   input.on('keypress change keydown', dreload)
   save.on('click', permalink)
   perma.on('click', follow)
-  first.on('click', () => to('first'))
-  prev.on('click', () => to('prev'))
-  next.on('click', () => to('next'))
-  last.on('click', () => to('last'))
-  replay.on('click', () => forced(state.code))
+  first.on('click', (e) => to(e, 'first'))
+  prev.on('click', (e) => to(e, 'prev'))
+  next.on('click', (e) => to(e, 'next'))
+  last.on('click', (e) => to(e, 'last'))
+  x.on('click', refactor)
+  replay.on('click', refresh)
   recorder.on('click', toggleRecorder)
 }
 
@@ -62,17 +64,64 @@ function reload () {
     return false
   }
   reset(code)
-  state.visualization = visualizer(injection(code))
+  if (state.visualization) {
+    state.visualization.off()
+  }
+  var options = {
+    speed: parseInt(x.text())
+  }
+  state.visualization = visualizer(injection(code), options)
+  state.visualization.on('frame', resetPlayback)
   if (recording()) {
     record()
   }
 }
 
-function to (position) {
+function to (e, position) {
+  if ($(e.currentTarget).hasClass('ng-playback-disabled')) {
+    return
+  }
   if (state.visualization) {
     state.visualization[position]()
+    resetPlayback()
   }
-  // toggle classes
+}
+
+function refresh () {
+  forced(state.code)
+}
+
+function refactor () {
+  var speed = parseInt(x.text())
+  if (speed === 32) {
+    speed = 1
+    x.text(speed + 'x')
+  } else {
+    speed *= 2
+    x.text(speed + 'x (slower)')
+  }
+  refresh()
+}
+
+function resetPlayback () {
+  var vis = state.visualization
+  if (!vis || !vis.history.length) {
+    set(first, false)
+    set(prev, false)
+    set(next, false)
+    set(last, false)
+    return
+  }
+  var current = vis.historyIndex
+  var total = vis.history.length - 1
+  set(first, current > 0)
+  set(prev, current > 0)
+  set(next, current < total)
+  set(last, current < total)
+
+  function set (element, enabled) {
+    element[enabled ? 'removeClass' : 'addClass']('ng-playback-disabled')
+  }
 }
 
 function recording () {
@@ -93,8 +142,9 @@ function toggleRecorder () {
 
 function reset (code) {
   console.clear()
-  resetCam()
   state = { code }
+  resetCam()
+  resetPlayback()
   download.removeClass('ng-download-ready')
   download.attr('href', null)
   download.attr('download', null)

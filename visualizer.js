@@ -5,6 +5,8 @@ import d3 from 'd3'
 import raf from 'raf'
 import sum from 'hash-sum'
 import assign from 'assignment'
+import emitter from 'contra/emitter'
+import queue from 'contra/queue'
 import promisees from './lib'
 var PENDING = void 0
 var FULFILLED = 1
@@ -15,7 +17,7 @@ var states = {
   [REJECTED]: 'rejected'
 }
 
-function visualizer (result) {
+function visualizer (result, options = {}) {
   if (result === false) {
     return
   }
@@ -26,6 +28,7 @@ function visualizer (result) {
   var promises = []
   var selector = '.ly-output'
   var parent = $.findOne(selector)
+  var renderer = queue(pace)
 
   $(selector).find('*').remove()
 
@@ -45,26 +48,33 @@ function visualizer (result) {
   promisees.on('blocked', blocked)
   promisees.on('state', state)
 
-  return {
+  var visualization = emitter({
     first () {
       frameByFrame = true
       draw(history[0])
     },
     prev () {
       frameByFrame = true
-      draw(history[currentFrame() - 1])
+      draw(previousSnapshot())
     },
     next () {
       frameByFrame = true
-      draw(history[currentFrame() + 1])
+      draw(history[historyIndex() + 1])
     },
     last () {
       frameByFrame = true
       draw(history[history.length - 1])
-    }
-  }
+    },
+    history,
+    get historyIndex () { return historyIndex() }
+  })
 
-  function currentFrame () {
+  return visualization
+
+  function previousSnapshot () {
+    return history[historyIndex() - 1]
+  }
+  function historyIndex () {
     return history.indexOf(historyFrame)
   }
 
@@ -101,19 +111,20 @@ function visualizer (result) {
 
   function blocked (p, blocker) {
     p.meta.blockers++
-    blocker.meta.blocking.push([p, blocker, true])
+    blocker.meta.blocking.push([p, true])
     persist()
   }
 
   function unblock (p) {
-    p.meta.blocking = p.meta.blocking.filter(([p, blocker, on]) => on).map(([p, blocker]) => {
+    p.meta.blocking.filter(([p, on]) => on).forEach((vector, i) => {
+      var [p] = vector
       var m = p.meta
       if (p._role === '[race]' && !m.raceEnded) {
         m.raceEnded = true
         p._parents.filter(p => p._state === PENDING).forEach(unblock)
       }
       m.blockers--
-      return [p, blocker, false]
+      vector[1] = false
     })
   }
 
@@ -123,24 +134,40 @@ function visualizer (result) {
     if (last && sum(snapshot) === sum(last)) {
       return
     }
-    snapshot.ids = snapshot.reduce((acc, p) => { acc[p._id] = p; return acc }, {})
-    snapshot.offset = last ? new Date() - last.offset : 0
+    snapshot.ids = snapshot.reduce((acc, p) => (acc[p._id] = p, acc), {})
+    snapshot.date = new Date()
+    snapshot.offset = last ? snapshot.date - last.date + 1 : 0
     if (rematrixed) {
       rematrix(snapshot)
     } else {
       snapshot.matrix = last.matrix
     }
     history.push(snapshot)
-    if (frameByFrame !== true) {
-      draw(snapshot)
+    renderer.unshift({ snapshot })
+  }
+
+  function pace ({ snapshot }, done) {
+    setTimeout(paced, options.speed * snapshot.offset - snapshot.offset)
+    function paced () {
+      if (frameByFrame !== true) {
+        draw(snapshot)
+        visualization.emit('frame', snapshot)
+      } else {
+        renderer.pause()
+      }
+      done()
     }
   }
 
   function draw (snapshot) {
+    console.log(snapshot)
+
+    historyFrame = snapshot
+
     var hash = sum(snapshot)
     var dots = svg
       .selectAll('g')
-      .data(snapshot, identity)
+      .data(snapshot, identity.bind(null, previousSnapshot()))
 
     var dotEnter = dots
       .enter()
@@ -149,8 +176,6 @@ function visualizer (result) {
     var circleEnter = dotEnter
       .append('circle')
       .attr('r', 45)
-
-    historyFrame = snapshot
 
     renderDots()
     renderDotText()
@@ -226,8 +251,8 @@ function visualizer (result) {
         .remove()
     }
 
-    function identity (p) {
-      var prev = snapshot.ids[p._id]
+    function identity (old, p) {
+      var prev = old ? old.ids[p._id] : null
       if (!prev) {
         return hash + Math.random()
       }
@@ -238,21 +263,21 @@ function visualizer (result) {
     }
 
     function renderBlockers () {
-      var vectors = [].concat(...snapshot.map(p => p.meta.blocking))
+      var vectors = [].concat(...snapshot.map(p => p.meta.blocking.map(vector => [p, ...vector])))
       var blockers = svg
         .selectAll('.p-blocker-arrow')
-        .data(vectors, ([p, blocker]) => `${p._id}-${blocker._id}`)
+        .data(vectors, ([blocker, p]) => `${blocker._id}-${p._id}`)
 
       blockers
         .enter()
         .insert('line', ':first-child')
-        .attr('x1', ([p, blocker]) => cx(blocker))
-        .attr('y1', ([p, blocker]) => cy(blocker))
-        .attr('x2', ([p]) => cx(p))
-        .attr('y2', ([p]) => cy(p))
 
       blockers
-        .attr('class', ([p, blocker, on]) => `p-blocker-arrow ${on ? '' : 'p-blocker-leftover'}`)
+        .attr('class', ([blocker, p, on]) => `p-blocker-arrow ${on ? '' : 'p-blocker-leftover'}`)
+        .attr('x1', ([blocker]) => cx(blocker))
+        .attr('y1', ([blocker]) => cy(blocker))
+        .attr('x2', ([blocker, p]) => cx(p))
+        .attr('y2', ([blocker, p]) => cy(p))
 
       blockers
         .exit()
@@ -402,10 +427,11 @@ function visualizer (result) {
         assigned(p, row, 0)
       }
       return matrix
-    }
-    function assigned (p, row, depth) {
-      p.meta.row = row
-      p.meta.col = row[depth]
+      function assigned (p, row, depth) {
+        p.meta.row = row
+        p.meta.col = row[depth]
+        row._id = matrix.indexOf(row)
+      }
     }
   }
 
@@ -437,7 +463,7 @@ function visualizer (result) {
     var row_length = Math.max(...p.meta.row.map(col => col.length))
     var row_height = row_length * 100
     var accumulated = 0
-    var level = historyFrame.matrix.indexOf(p.meta.row)
+    var level = historyFrame.matrix.findIndex(row => row._id === p.meta.row._id)
     var n = level
     while (n > 0) {
       n--
