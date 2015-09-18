@@ -211,7 +211,7 @@ function visualizer (result, options = {}) {
             return m.resolver.name || 'new()'
           }
           if (m.fulfillment && m.rejection) {
-            return `<tspan dx='${cx(p) - 30}' dy='${cy(p) - 10}'>${m.fulfillment.name || '.then()'}</tspan><tspan dx='-60' dy='25'>${m.rejection.name || '.catch()'}</tspan>`
+            return `<tspan dx='${cx(historyFrame.ids[p._id]) - 30}' dy='${cy(historyFrame.ids[p._id]) - 10}'>${m.fulfillment.name || '.then()'}</tspan><tspan dx='-60' dy='25'>${m.rejection.name || '.catch()'}</tspan>`
           }
           if (m.fulfillment) {
             return m.fulfillment.name || '.then()'
