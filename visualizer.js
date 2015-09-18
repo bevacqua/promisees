@@ -4,7 +4,7 @@ import $ from 'dominus'
 import d3 from 'd3'
 import raf from 'raf'
 import sum from 'hash-sum'
-import assign from 'assignment'
+import clone from 'lodash/lang/cloneDeep'
 import emitter from 'contra/emitter'
 import queue from 'contra/queue'
 import promisees from './lib'
@@ -110,7 +110,6 @@ function visualizer (result, options = {}) {
   }
 
   function blocked (p, blocker) {
-    console.log(blocker._id, 'blocking', p._id)
     p.meta.blockers++
     blocker.meta.blocking.push([p, true])
     persist()
@@ -131,14 +130,13 @@ function visualizer (result, options = {}) {
 
   function persist () {
     var last = history[history.length - 1]
-    var snapshot = promises.map(p => assign({}, p))
+    var snapshot = promises.map(clone)
     snapshot.ids = snapshot.reduce((acc, p) => (acc[p._id] = p, acc), {})
     snapshot.date = new Date()
     snapshot.offset = last ? snapshot.date - last.date + 1 : 0
     rematrix(snapshot)
     history.push(snapshot)
     renderer.unshift({ snapshot })
-    console.log(snapshot)
   }
 
   function pace ({ snapshot }, done) {
@@ -179,8 +177,8 @@ function visualizer (result, options = {}) {
     function renderDots () {
       dots
         .selectAll('circle')
-        .attr('cx', cx)
-        .attr('cy', cy)
+        .attr('cx', p => cx(historyFrame.ids[p._id]))
+        .attr('cy', p => cy(historyFrame.ids[p._id]))
         .attr('class', p => `p-circle ${p.meta.blockers ? 'p-blocked' : 'p-' + states[p._state]}`)
 
       dots
@@ -194,8 +192,8 @@ function visualizer (result, options = {}) {
 
       dots
         .selectAll('text')
-        .attr('dx', cx)
-        .attr('dy', cy)
+        .attr('dx', p => cx(historyFrame.ids[p._id]))
+        .attr('dy', p => cy(historyFrame.ids[p._id]))
         .attr('class', p => {
           var m = p.meta
           var dual = m.fulfillment && m.rejection
@@ -234,10 +232,10 @@ function visualizer (result, options = {}) {
         .attr('class', ([p, parent]) => `p-connector p-connector-${parent._id}-${p._id}`)
 
       connectors
-        .attr('x1', ([p, parent]) => cx(parent))
-        .attr('y1', ([p, parent]) => cy(parent))
-        .attr('x2', ([p, parent]) => cx(p))
-        .attr('y2', ([p, parent]) => cy(p))
+        .attr('x1', ([p, parent]) => cx(historyFrame.ids[parent._id]))
+        .attr('y1', ([p, parent]) => cy(historyFrame.ids[parent._id]))
+        .attr('x2', ([p, parent]) => cx(historyFrame.ids[p._id]))
+        .attr('y2', ([p, parent]) => cy(historyFrame.ids[p._id]))
 
       connectors
         .exit()
@@ -270,10 +268,10 @@ function visualizer (result, options = {}) {
 
       blockers
         .attr('class', ([blocker, p, on]) => `p-blocker-arrow ${on ? '' : 'p-blocker-leftover'}`)
-        .attr('x1', ([blocker]) => cx(blocker))
-        .attr('y1', ([blocker]) => cy(blocker))
-        .attr('x2', ([blocker, p]) => cx(p))
-        .attr('y2', ([blocker, p]) => cy(p))
+        .attr('x1', ([blocker]) => cx(historyFrame.ids[blocker._id]))
+        .attr('y1', ([blocker]) => cy(historyFrame.ids[blocker._id]))
+        .attr('x2', ([blocker, p]) => cx(historyFrame.ids[p._id]))
+        .attr('y2', ([blocker, p]) => cy(historyFrame.ids[p._id]))
 
       blockers
         .exit()
