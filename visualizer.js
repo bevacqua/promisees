@@ -79,6 +79,9 @@ function visualizer (result, options = {}) {
   function historyIndex () {
     return history.indexOf(historyFrame)
   }
+  function promiseInTime (mutable) {
+    return historyFrame.ids[mutable._id]
+  }
 
   function add (p) {
     p.meta = {
@@ -183,9 +186,9 @@ function visualizer (result, options = {}) {
     function renderDots () {
       dots
         .selectAll('circle')
-        .attr('cx', p => cx(historyFrame.ids[p._id]))
-        .attr('cy', p => cy(historyFrame.ids[p._id]))
-        .attr('class', p => `p-circle ${p.meta.blockers ? 'p-blocked' : 'p-' + states[p._state]}`)
+        .attr('cx', x)
+        .attr('cy', y)
+        .attr('class', p => `p-circle ${promiseInTime(p).meta.blockers ? 'p-blocked' : 'p-' + states[promiseInTime(p)._state]}`)
 
       dots
         .exit()
@@ -198,8 +201,8 @@ function visualizer (result, options = {}) {
 
       dots
         .selectAll('text')
-        .attr('dx', p => cx(historyFrame.ids[p._id]))
-        .attr('dy', p => cy(historyFrame.ids[p._id]))
+        .attr('dx', x)
+        .attr('dy', y)
         .attr('class', p => {
           var m = p.meta
           var dual = m.fulfillment && m.rejection
@@ -211,7 +214,7 @@ function visualizer (result, options = {}) {
             return m.resolver.name || 'new()'
           }
           if (m.fulfillment && m.rejection) {
-            return `<tspan dx='${cx(historyFrame.ids[p._id]) - 30}' dy='${cy(historyFrame.ids[p._id]) - 10}'>${m.fulfillment.name || '.then()'}</tspan><tspan dx='-60' dy='25'>${m.rejection.name || '.catch()'}</tspan>`
+            return `<tspan dx='${x(p) - 30}' dy='${y(p) - 10}'>${m.fulfillment.name || '.then()'}</tspan><tspan dx='-60' dy='25'>${m.rejection.name || '.catch()'}</tspan>`
           }
           if (m.fulfillment) {
             return m.fulfillment.name || '.then()'
@@ -238,10 +241,10 @@ function visualizer (result, options = {}) {
         .attr('class', ([p, parent]) => `p-connector p-connector-${parent._id}-${p._id}`)
 
       connectors
-        .attr('x1', ([p, parent]) => cx(historyFrame.ids[parent._id]))
-        .attr('y1', ([p, parent]) => cy(historyFrame.ids[parent._id]))
-        .attr('x2', ([p, parent]) => cx(historyFrame.ids[p._id]))
-        .attr('y2', ([p, parent]) => cy(historyFrame.ids[p._id]))
+        .attr('x1', ([p, parent]) => x(parent))
+        .attr('y1', ([p, parent]) => y(parent))
+        .attr('x2', ([p, parent]) => x(p))
+        .attr('y2', ([p, parent]) => y(p))
 
       connectors
         .exit()
@@ -274,10 +277,10 @@ function visualizer (result, options = {}) {
 
       blockers
         .attr('class', ([blocker, p, on]) => `p-blocker-arrow ${on ? '' : 'p-blocker-leftover'}`)
-        .attr('x1', ([blocker]) => cx(historyFrame.ids[blocker._id]))
-        .attr('y1', ([blocker]) => cy(historyFrame.ids[blocker._id]))
-        .attr('x2', ([blocker, p]) => cx(historyFrame.ids[p._id]))
-        .attr('y2', ([blocker, p]) => cy(historyFrame.ids[p._id]))
+        .attr('x1', ([blocker]) => x(blocker))
+        .attr('y1', ([blocker]) => y(blocker))
+        .attr('x2', ([blocker, p]) => x(p))
+        .attr('y2', ([blocker, p]) => y(p))
 
       blockers
         .exit()
@@ -445,7 +448,8 @@ function visualizer (result, options = {}) {
     return depth
   }
 
-  function cx (p) {
+  function x (mutable) {
+    var p = promiseInTime(mutable)
     var x = 70
     while (p._parents.length) {
       x += 100
@@ -457,7 +461,8 @@ function visualizer (result, options = {}) {
     return x
   }
 
-  function cy (p) {
+  function y (mutable) {
+    var p = promiseInTime(mutable)
     var col = p.meta.col
     var col_index = col.map(p => p._id).indexOf(p._id) + 1
     var row_length = Math.max(...p.meta.row.map(col => col.length))
