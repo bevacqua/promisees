@@ -39,7 +39,7 @@ p
   .catch(err => console.error(err))
 `
 var state = {}
-var base = location.pathname.slice(1)
+var base = location.pathname.replace(/\/$/, '')
 var visualization
 var cam
 var editor = ace.edit(input[0])
