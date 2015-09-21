@@ -9,6 +9,8 @@ import vectorcam from 'vectorcam'
 import injection from './injection'
 import visualizer from './visualizer'
 import promisees from './lib'
+import loadScript from './loadScript'
+import emitter from 'contra/emitter'
 import debounce from 'lodash/function/debounce'
 var container = $('.ly-container')
 var input = $('.ly-input')
@@ -20,6 +22,8 @@ var first = $('.ng-first')
 var prev = $('.ng-prev')
 var next = $('.ng-next')
 var last = $('.ng-last')
+var babelify = $('.ng-babelify')
+var babelReady
 var x = $('.ng-x')
 var recorder = $('.ng-recorder')
 var download = $('.ng-download')
@@ -61,6 +65,7 @@ function listen () {
   prev.on('click', (e) => to(e, 'prev'))
   next.on('click', (e) => to(e, 'next'))
   last.on('click', (e) => to(e, 'last'))
+  babelify.on('click', refresh)
   x.on('click', refactor)
   replay.on('click', refresh)
   recorder.on('click', toggleRecorder)
@@ -84,10 +89,42 @@ function reload () {
   var options = {
     speed: parseInt(x.text())
   }
-  state.visualization = visualizer(injection(code), options)
-  state.visualization.on('frame', resetPlayback)
-  if (recording()) {
-    record()
+  compile(code, compiled => {
+    state.visualization = visualizer(injection(compiled), options)
+    state.visualization.on('frame', resetPlayback)
+    if (recording()) {
+      record()
+    }
+  })
+}
+
+function compile (code, done) {
+  var transform = babelify.value()
+  if (transform === false) {
+    done(code)
+  } else if ('babel' in global) {
+    compilation()
+  } else if (babelReady) {
+    babelReady.once('loaded', compilation)
+  } else {
+    babelReady = emitter()
+    loadScript(base + '/dist/babel.js', loaded)
+  }
+  function loaded () {
+    babelReady.emit('loaded')
+    compilation()
+  }
+  function compilation () {
+    var transformed = babel.transform(code, {
+      stage: 0,
+      optional: [
+        'es6.spec.templateLiterals',
+        'es6.spec.blockScoping',
+        'es6.spec.symbols'
+      ],
+      filename: 'promisees'
+    });
+    done(transformed.code)
   }
 }
 

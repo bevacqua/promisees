@@ -5,6 +5,7 @@ import d3 from 'd3'
 import raf from 'raf'
 import sum from 'hash-sum'
 import clone from 'lodash/lang/cloneDeep'
+import findIndex from 'lodash/array/findIndex'
 import emitter from 'contra/emitter'
 import queue from 'contra/queue'
 import promisees from './lib'
@@ -468,7 +469,7 @@ function visualizer (result, options = {}) {
     var row_length = Math.max(...p.meta.row.map(col => col.length))
     var row_height = row_length * 100
     var accumulated = 0
-    var level = historyFrame.matrix.findIndex(row => row._id === p.meta.row._id)
+    var level = findIndex(historyFrame.matrix, row => row._id === p.meta.row._id)
     var n = level
     while (n > 0) {
       n--

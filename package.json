@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Promise visualization playground for the adventurous",
   "scripts": {
-    "build": "npm run scripts && npm run styles",
+    "build": "cp node_modules/babel-core/browser.js dist/babel.js ; npm run scripts && npm run styles",
     "scripts": "browserify -dvo dist/demo.js demo.js && uglifyjs -m -c -o dist/demo.min.js dist/demo.js",
     "start": "watchify -dvo dist/demo.min.js demo.js & stylus --include-css --include . -w demo.styl --import node_modules/nib -o dist & static-server . --port ${PORT:='3000'}",
     "styles": "stylus --include-css --include . demo.styl --import node_modules/nib -o dist && cleancss dist/demo.css -o dist/demo.css",
@@ -34,6 +34,7 @@
   "homepage": "https://github.com/bevacqua/promisees",
   "dependencies": {
     "assignment": "2.2.0",
+    "babel-core": "5.8.25",
     "brace": "0.5.1",
     "contra": "1.9.1",
     "d3": "3.5.6",
