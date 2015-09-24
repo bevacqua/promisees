@@ -226,8 +226,21 @@ function record () {
   function inactive () {
     if (cam) {
       downloadIcon.setClass('fa fa-battery-half')
+      cam.pause()
+
+      let svg = d3.select('.ly-svg')
+      svg
+        .append('circle')
+        .attr('class', 'r-end')
+        .attr('r', 10)
+        .attr('cx', svg.attr('width') - 30)
+        .attr('cy', 30)
+
+      cam.snap()
       cam.stop(recorded)
       cam = null
+
+      d3.select('.r-end').remove()
     }
   }
 
