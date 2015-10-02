@@ -18,7 +18,7 @@
       <li><a class='ng-link ng-perma' href='#code=function+later+()+%7B%0A++return+new+Promise((resolve%2C+reject)+%3D%3E+%7B%0A++++setTimeout(()+%3D%3E+resolve(%22yay%22)%2C+1500)%0A++%7D)%0A%7D%0A%0Afunction+muchLater+()+%7B%0A++return+later().then(later)%0A%7D%0A%0Avar+p+%3D+later()%0A%0Ap%0A++.then(x+%3D%3E+x.y.z)%0A++.catch(err+%3D%3E+console.error(err))%0A++.then(muchLater)%0A++.then(x+%3D%3E+console.log(x))%0A++.then(x+%3D%3E+console.log(x))%0A%0Avar+p2+%3D+p.then(later)%0Ap2.then(x+%3D%3E+console.log(x))%0Ap2.then(x+%3D%3E+x.y.z)%0A++.catch(err+%3D%3E+console.error(err))%0A++.then(x+%3D%3E+fetch("http%3A%2F%2Fgoogle.com"))'>Complex</a></li>
 
       <li><button class='ng-link ng-save'>Permalink to your code block?</button></li>
-      <li><input id='babelify' class='ng-babelify' type='checkbox' title='Compile ES6 code down to ES5'/><label class='ng-babelify-label' for='babelify' title='Compile ES6 code down to ES5'>Babelify</label></li>
+      <li><input id='babelify' class='ng-babelify' type='checkbox' title='Compile ES6 code down to ES5' checked/><label class='ng-babelify-label' for='babelify' title='Compile ES6 code down to ES5'>Babelify</label></li>
       <li><a class='ng-link' href='https://github.com/bevacqua/promisees', target='_blank'>GitHub</a></li>
       <li><a class='ng-link' href='https://twitter.com/nzgb', target='_blank'>Twitter</a></li>
       <li><a class='ng-link' href='http://ponyfoo.com', target='_blank'>ponyfoo.com</a></li>
