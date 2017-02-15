@@ -2,6 +2,7 @@
 
 import $ from 'dominus'
 import raf from 'raf'
+import regeneratorRuntime from 'regenerator-runtime/runtime'
 import promisees from './lib'
 import polyfetch from './polyfetch'
 
@@ -14,6 +15,7 @@ function injection (code) {
     .appendTo(document.body)[0]
     .contentWindow
 
+  frame.regeneratorRuntime = regeneratorRuntime
   frame.Promise = promisees.Promise
   frame.eval(polyfetch)
 
